@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#7c3aed" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Youtify" />
+  <meta name="description" content="Download YouTube videos as MP3 — free, fast, no ads" />
+
+  <title>Youtify — YouTube to MP3</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+  <!-- Ambient background -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <!-- iOS install banner -->
+  <div class="install-banner hidden" id="installBanner">
+    <div class="install-content">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" fill="url(#ib)"/>
+        <defs><linearGradient id="ib" x1="2" y1="2" x2="22" y2="22"><stop offset="0%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#60a5fa"/></linearGradient></defs>
+      </svg>
+      <div class="install-text">
+        <strong>Add to Home Screen</strong>
+        <span>Tap <b>Share</b> → <b>Add to Home Screen</b> for the app experience</span>
+      </div>
+      <button class="install-close" id="installClose">✕</button>
+    </div>
+  </div>
+
+  <!-- App -->
+  <div class="app">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header-logo">
+        <div class="logo-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" fill="url(#hg)"/>
+            <defs><linearGradient id="hg" x1="2" y1="2" x2="22" y2="22"><stop offset="0%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#60a5fa"/></linearGradient></defs>
+          </svg>
+        </div>
+        <div>
+          <h1 class="app-name">Youtify</h1>
+          <p class="app-sub">YouTube to MP3</p>
+        </div>
+      </div>
+      <button class="theme-btn" id="themeBtn" aria-label="Toggle theme">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      </button>
+    </header>
+
+    <!-- Main -->
+    <main class="main">
+
+      <!-- Hero text -->
+      <div class="hero">
+        <h2 class="hero-title">Download any song<br/>as <span class="grad-text">MP3</span> for free</h2>
+        <p class="hero-sub">Paste a YouTube link and get your MP3 in seconds</p>
+      </div>
+
+      <!-- URL Card -->
+      <div class="card" id="urlCard">
+        <label class="field-label">YouTube URL</label>
+        <div class="url-box" id="urlBox">
+          <svg class="url-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <input type="url" id="urlInput" class="url-input" placeholder="https://youtube.com/watch?v=..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="url" />
+          <button class="btn-paste" id="pasteBtn">Paste</button>
+        </div>
+        <div class="field-error hidden" id="urlError"></div>
+        <button class="btn-fetch" id="fetchBtn">
+          <span id="fetchLabel">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Search
+          </span>
+          <div class="spinner hidden" id="fetchSpinner"></div>
+        </button>
+      </div>
+
+      <!-- Preview Card -->
+      <div class="card hidden" id="previewCard">
+        <div class="preview-row">
+          <div class="thumb-wrap">
+            <img id="thumbnail" class="thumb" src="" alt="" />
+            <div class="thumb-dur" id="durBadge"></div>
+          </div>
+          <div class="video-meta">
+            <h3 class="video-title" id="videoTitle"></h3>
+            <p class="video-uploader" id="videoUploader"></p>
+            <div class="mp3-tag">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+              MP3 · Best Quality
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Download Card -->
+      <div class="card hidden" id="downloadCard">
+
+        <button class="btn-download" id="downloadBtn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download MP3
+        </button>
+
+        <!-- Progress -->
+        <div class="progress-wrap hidden" id="progressWrap">
+          <div class="progress-top">
+            <span class="progress-label" id="progressLabel">Starting...</span>
+            <span class="progress-pct" id="progressPct">0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <p class="progress-status" id="progressStatus"></p>
+        </div>
+
+        <!-- Success -->
+        <div class="banner success hidden" id="successBanner">
+          <div class="banner-icon">✅</div>
+          <div class="banner-body">
+            <strong>Download Complete!</strong>
+            <span>Your MP3 has been saved</span>
+          </div>
+        </div>
+
+        <!-- Error -->
+        <div class="banner error hidden" id="errorBanner">
+          <div class="banner-icon">⚠️</div>
+          <span id="errorText"></span>
+        </div>
+
+      </div>
+
+      <!-- How it works -->
+      <div class="steps-card" id="stepsCard">
+        <h3 class="steps-title">How it works</h3>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text">
+              <strong>Paste URL</strong>
+              <span>Copy any YouTube link</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text">
+              <strong>Search</strong>
+              <span>We fetch the video info</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text">
+              <strong>Download</strong>
+              <span>Get your MP3 instantly</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      Developed by <span class="grad-text">Harshal Chirde</span>
+    </footer>
+
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
