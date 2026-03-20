@@ -14,8 +14,28 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // ── Resolve yt-dlp binary ─────────────────────────────────────────────────────
 function getYtdlp() {
-  // On Render/Railway, yt-dlp is installed globally via pip
   return process.env.YTDLP_PATH || 'yt-dlp';
+}
+
+// ── Cookies setup ─────────────────────────────────────────────────────────────
+const cookiesTmp = path.join(os.tmpdir(), 'yt_cookies.txt');
+
+if (process.env.COOKIES_CONTENT) {
+  try {
+    fs.writeFileSync(cookiesTmp, process.env.COOKIES_CONTENT, 'utf8');
+    console.log('✅ Cookies loaded from environment variable');
+  } catch (e) {
+    console.error('❌ Failed to write cookies:', e.message);
+  }
+}
+
+function getCookiesArgs() {
+  if (fs.existsSync(cookiesTmp) && fs.statSync(cookiesTmp).size > 10)
+    return ['--cookies', cookiesTmp];
+  const local = path.join(__dirname, 'cookies.txt');
+  if (fs.existsSync(local) && fs.statSync(local).size > 10)
+    return ['--cookies', local];
+  return [];
 }
 
 // ── GET /api/info?url=... ─────────────────────────────────────────────────────
@@ -27,7 +47,9 @@ app.get('/api/info', (req, res) => {
   let stdout = '', stderr = '';
 
   const proc = spawn(ytdlp, [
-    '--dump-json', '--no-playlist', '--no-warnings', url
+    '--dump-json', '--no-playlist', '--no-warnings',
+    ...getCookiesArgs(),
+    url
   ]);
 
   proc.stdout.on('data', (d) => (stdout += d));
@@ -68,11 +90,11 @@ app.get('/api/download', (req, res) => {
     .trim()
     .substring(0, 80) || 'audio';
 
-  // Write to temp file, then stream to client
   const tmpFile = path.join(os.tmpdir(), `youtify_${Date.now()}.mp3`);
 
   const args = [
     '--no-playlist', '--no-warnings',
+    ...getCookiesArgs(),
     '-f', 'bestaudio/best',
     '-x', '--audio-format', 'mp3', '--audio-quality', '0',
     '-o', tmpFile,
@@ -89,7 +111,6 @@ app.get('/api/download', (req, res) => {
   proc.stderr.on('data', (d) => (stderr += d.toString()));
 
   proc.on('close', (code) => {
-    // Check for the actual mp3 file (yt-dlp may append .mp3 to our path)
     let finalFile = tmpFile;
     if (!fs.existsSync(finalFile)) {
       const withExt = tmpFile.replace(/\.mp3$/, '') + '.mp3';
@@ -128,7 +149,6 @@ app.get('/api/progress', (req, res) => {
 
   const tmpFile = path.join(os.tmpdir(), `youtify_${Date.now()}`);
 
-  // Server-Sent Events
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
@@ -138,6 +158,7 @@ app.get('/api/progress', (req, res) => {
 
   const args = [
     '--no-playlist', '--no-warnings', '--newline',
+    ...getCookiesArgs(),
     '-f', 'bestaudio/best',
     '-x', '--audio-format', 'mp3', '--audio-quality', '0',
     '-o', tmpFile + '.%(ext)s',
@@ -163,7 +184,6 @@ app.get('/api/progress', (req, res) => {
   });
 
   proc.on('close', (code) => {
-    // Find the output file
     let finalFile = null;
     const mp3Path = tmpFile + '.mp3';
     const webmPath = tmpFile + '.webm';
@@ -174,7 +194,6 @@ app.get('/api/progress', (req, res) => {
     else if (fs.existsSync(m4aPath)) finalFile = m4aPath;
 
     if (finalFile) {
-      // Store temp file path in a temp registry file for download
       const regFile = tmpFile + '.reg';
       fs.writeFileSync(regFile, JSON.stringify({ file: finalFile, title: safeTitle }));
       const token = path.basename(tmpFile);
@@ -196,7 +215,6 @@ app.get('/api/progress', (req, res) => {
 // ── Token-based file download ─────────────────────────────────────────────────
 app.get('/api/file/:token', (req, res) => {
   const { token } = req.params;
-  // Sanitize token — only allow safe filenames
   if (!/^youtify_\d+$/.test(token)) return res.status(400).end();
 
   const regFile = path.join(os.tmpdir(), token + '.reg');
